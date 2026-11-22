@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI HG01｜粗大動作手勢溝通輔助系統 (M1–M5)</title>
+  <link rel="stylesheet" href="./static/css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">HG</div>
+        <div>
+          <h1>AI HG01 粗大動作溝通輔助系統</h1>
+          <p id="appSubtitle" class="subtitle">M1–M5 零分指手勢選單 · MediaPipe 即時網頁原型</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="mode-switch" role="group" aria-label="輸入來源切換">
+          <button id="btnModeCamera" class="mode-btn" type="button" data-mode="camera">
+            📷 攝影機辨識
+          </button>
+          <button id="btnModeSim" class="mode-btn active" type="button" data-mode="simulator">
+            🖱️ 模擬測試
+          </button>
+        </div>
+
+        <button id="btnToggleCamera" class="btn btn-primary hidden" type="button">
+          啟動攝影機
+        </button>
+        <button id="btnCalibrate" class="btn btn-secondary" type="button" title="將目前手掌位置設為中心中性區">
+          🎯 校正中心
+        </button>
+        <button id="btnToggleSpeech" class="btn btn-secondary" type="button" title="切換語音朗讀">
+          🔊 語音：開
+        </button>
+        <button id="btnOpenSettings" class="btn btn-secondary" type="button">
+          ⚙️ 詞庫與參數
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Two-Column Workspace -->
+    <main class="workspace">
+      <!-- Left Column: AAC Directional Menu Stage -->
+      <section class="panel stage-panel" aria-label="溝通選單互動區">
+        <div class="stage-header">
+          <div class="breadcrumb-wrap">
+            <span id="stepBadge" class="step-badge">步驟 1 / 2</span>
+            <h2 id="stageTitle">選擇溝通群組 (G1–G5)</h2>
+          </div>
+          <div class="stage-controls">
+            <button id="btnBackLevel" class="btn btn-ghost hidden" type="button">
+              ↩ 返回群組 (Esc)
+            </button>
+            <button id="btnResetCenter" class="btn btn-ghost btn-sm" type="button" title="重設中心點至畫面中央">
+              重設中心點
+            </button>
+          </div>
+        </div>
+
+        <!-- Spoken / Armed Phrase Output Banner -->
+        <div id="outputBanner" class="output-banner state-idle" aria-live="polite">
+          <div class="output-meta">
+            <span id="outputStatusTag" class="status-tag">待機中</span>
+            <span id="outputHint" class="output-hint">將手移向四個方向選擇群組，或原地握拳→張掌進入 G5 緊急快捷</span>
+          </div>
+          <div class="output-main">
+            <div id="outputText" class="output-text">請以手勢或方向鍵選擇群組</div>
+            <div class="output-buttons">
+              <button id="btnConfirmArmed" class="btn btn-accent hidden" type="button">
+                確認朗讀 (M5)
+              </button>
+              <button id="btnCancelArmed" class="btn btn-ghost hidden" type="button">
+                取消預選
+              </button>
+              <button id="btnReplayLast" class="btn btn-secondary hidden" type="button">
+                🔊 重播語音
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3x3 Cross Directional Stage (M1-M5) -->
+        <div class="cross-stage" role="grid" aria-label="M1 至 M5 十字方向選單">
+          <!-- Row 1: M2 Up -->
+          <div class="cross-spacer"></div>
+          <button id="cardUp" class="dir-card" type="button" data-direction="up" data-motion="M2">
+            <div class="card-top">
+              <span class="motion-pill pill-up">M2 · Up</span>
+              <span class="card-group-code" id="codeUp">G2</span>
+            </div>
+            <div class="card-body">
+              <span class="card-icon" id="iconUp">🩺</span>
+              <div class="card-title" id="titleUp">醫療不適</div>
+              <div class="card-sub" id="subUp"></div>
+            </div>
+            <div class="dwell-track">
+              <div class="dwell-fill" id="dwellUp"></div>
+            </div>
+          </button>
+          <div class="cross-spacer"></div>
+
+          <!-- Row 2: M1 Left | M5 Center Hub | M3 Right -->
+          <button id="cardLeft" class="dir-card" type="button" data-direction="left" data-motion="M1">
+            <div class="card-top">
+              <span class="motion-pill pill-left">M1 · Left</span>
+              <span class="card-group-code" id="codeLeft">G1</span>
+            </div>
+            <div class="card-body">
+              <span class="card-icon" id="iconLeft">💧</span>
+              <div class="card-title" id="titleLeft">生理需求</div>
+              <div class="card-sub" id="subLeft"></div>
+            </div>
+            <div class="dwell-track">
+              <div class="dwell-fill" id="dwellLeft"></div>
+            </div>
+          </button>
+
+          <button id="cardCenter" class="center-hub" type="button" data-direction="center" data-motion="M5">
+            <svg class="hub-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="hub-ring-bg" cx="60" cy="60" r="54"></circle>
+              <circle id="hubRingProgress" class="hub-ring-fg" cx="60" cy="60" r="54"></circle>
+            </svg>
+            <div class="hub-content">
+              <span class="motion-pill pill-center">M5 · Open ↔ Fist</span>
+              <div class="hub-icon" id="iconCenter">🔔</div>
+              <div class="hub-title" id="titleCenter">G5 緊急快捷</div>
+              <div class="hub-sub" id="subCenter">握拳→張掌 / 半張掌駐留</div>
+            </div>
+          </button>
+
+          <button id="cardRight" class="dir-card" type="button" data-direction="right" data-motion="M3">
+            <div class="card-top">
+              <span class="motion-pill pill-right">M3 · Right</span>
+              <span class="card-group-code" id="codeRight">G3</span>
+            </div>
+            <div class="card-body">
+              <span class="card-icon" id="iconRight">💬</span>
+              <div class="card-title" id="titleRight">日常回應</div>
+              <div class="card-sub" id="subRight"></div>
+            </div>
+            <div class="dwell-track">
+              <div class="dwell-fill" id="dwellRight"></div>
+            </div>
+          </button>
+
+          <!-- Row 3: M4 Down -->
+          <div class="cross-spacer"></div>
+          <button id="cardDown" class="dir-card" type="button" data-direction="down" data-motion="M4">
+            <div class="card-top">
+              <span class="motion-pill pill-down">M4 · Down</span>
+              <span class="card-group-code" id="codeDown">G4</span>
+            </div>
+            <div class="card-body">
+              <span class="card-icon" id="iconDown">💡</span>
+              <div class="card-title" id="titleDown">環境協助</div>
+              <div class="card-sub" id="subDown"></div>
+            </div>
+            <div class="dwell-track">
+              <div class="dwell-fill" id="dwellDown"></div>
+            </div>
+          </button>
+          <div class="cross-spacer"></div>
+        </div>
+
+        <!-- M1-M5 Quick Legend Strip -->
+        <div class="legend-strip" aria-label="粗大動作對照表">
+          <div class="legend-item" data-legend="M1"><strong>M1 (Left)</strong><span>左移 / 左區停留 → G1</span></div>
+          <div class="legend-item" data-legend="M2"><strong>M2 (Up)</strong><span>上抬 / 上區停留 → G2</span></div>
+          <div class="legend-item" data-legend="M3"><strong>M3 (Right)</strong><span>右移 / 右區停留 → G3</span></div>
+          <div class="legend-item" data-legend="M4"><strong>M4 (Down)</strong><span>下放 / 下區停留 → G4</span></div>
+          <div class="legend-item" data-legend="M5"><strong>M5 (Open↔Fist)</strong><span>握拳→張掌 / 半張駐留 → G5 / 確認</span></div>
+        </div>
+      </section>
+
+      <!-- Right Column: Sensor Viewport, Telemetry, History -->
+      <aside class="side-column">
+        <!-- Camera / Virtual Hand Sensor Panel -->
+        <section class="panel sensor-panel" aria-label="手部感測與模擬面板">
+          <div class="panel-header">
+            <div class="sensor-status">
+              <span id="statusDot" class="status-dot dot-sim"></span>
+              <span id="sensorStatusText">模擬模式就緒（移動滑鼠或使用鍵盤）</span>
+            </div>
+            <span id="fpsBadge" class="fps-badge">SIM</span>
+          </div>
+
+          <div class="viewport-wrap">
+            <video id="cameraVideo" class="hidden" playsinline muted></video>
+            <canvas id="sensorCanvas" width="480" height="360"></canvas>
+            <div id="cameraPromptOverlay" class="camera-prompt hidden">
+              <p>點擊上方「啟動攝影機」開始即時 MediaPipe 零分指手部辨識</p>
+              <button id="btnStartCameraInline" class="btn btn-primary" type="button">
+                📷 立即啟動攝影機
+              </button>
+            </div>
+          </div>
+
+          <!-- Simulator Interactive Controls -->
+          <div id="simControls" class="sim-controls">
+            <div class="sim-row">
+              <label class="sim-label" for="simOpennessSlider">
+                手掌展開度模擬：<strong id="simOpennessVal">1.15</strong>
+                <span id="simPostureLabel" class="sim-tag">中性</span>
+              </label>
+              <div class="sim-slider-wrap">
+                <span class="tiny-label">握拳</span>
+                <input id="simOpennessSlider" type="range" min="0.65" max="1.75" step="0.02" value="1.15" />
+                <span class="tiny-label">張掌</span>
+              </div>
+            </div>
+            <div class="sim-quick-buttons">
+              <button class="btn btn-sm btn-secondary" type="button" data-sim-trigger="M1">← M1</button>
+              <button class="btn btn-sm btn-secondary" type="button" data-sim-trigger="M2">↑ M2</button>
+              <button class="btn btn-sm btn-secondary" type="button" data-sim-trigger="M4">↓ M4</button>
+              <button class="btn btn-sm btn-secondary" type="button" data-sim-trigger="M3">→ M3</button>
+              <button id="btnSimFistOpen" class="btn btn-sm btn-accent" type="button">
+                🖐️ 模擬握拳→張掌 (M5)
+              </button>
+            </div>
+            <p class="sim-tip">
+              在上方畫布移動滑鼠可測試區域停留與平移；鍵盤支援 <code>WASD</code> / 方向鍵、<code>Space</code> (M5)、<code>Esc</code> (返回)。
+            </p>
+          </div>
+
+          <!-- Live Telemetry Bar -->
+          <div class="telemetry-box">
+            <div class="telemetry-grid">
+              <div class="metric">
+                <span class="metric-label">目前區域</span>
+                <strong id="metricZone" class="metric-value">中心</strong>
+              </div>
+              <div class="metric">
+                <span class="metric-label">掌心偏移 (dx, dy)</span>
+                <strong id="metricOffset" class="metric-value">0.00, 0.00</strong>
+              </div>
+              <div class="metric">
+                <span class="metric-label">手掌狀態</span>
+                <strong id="metricPosture" class="metric-value">待命</strong>
+              </div>
+              <div class="metric">
+                <span class="metric-label">最近觸發</span>
+                <strong id="metricLastTrigger" class="metric-value">—</strong>
+              </div>
+            </div>
+
+            <!-- Visual Openness Meter with Threshold Markers -->
+            <div class="openness-meter">
+              <div class="openness-header">
+                <span>手掌展開度（零分指總體比例）</span>
+                <strong id="metricOpenness">0.00</strong>
+              </div>
+              <div class="meter-track">
+                <div id="meterFill" class="meter-fill"></div>
+                <div id="markerFist" class="meter-marker marker-fist" title="握拳門檻"></div>
+                <div id="markerHalf" class="meter-marker marker-half" title="半張掌駐留門檻"></div>
+                <div id="markerOpen" class="meter-marker marker-open" title="張掌門檻"></div>
+              </div>
+              <div class="meter-legend">
+                <span class="leg-fist">握拳門檻</span>
+                <span class="leg-half">半張駐留</span>
+                <span class="leg-open">張掌確認</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Spoken Phrase History -->
+        <section class="panel history-panel" aria-label="溝通紀錄">
+          <div class="panel-header">
+            <h3 id="historyHeading">溝通紀錄</h3>
+            <button id="btnClearHistory" class="btn btn-ghost btn-sm" type="button">
+              清空紀錄
+            </button>
+          </div>
+          <ul id="historyList" class="history-list">
+            <li class="history-empty">尚無送出紀錄，完成一次 M5 確認後會顯示於此。</li>
+          </ul>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Settings & Phrase Customization Modal -->
+  <div id="settingsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modalTitle">詞庫與手勢參數設定</h2>
+        <button id="btnCloseModal" class="btn btn-ghost btn-sm" type="button" aria-label="關閉視窗">✕</button>
+      </div>
+
+      <div class="modal-tabs" role="tablist">
+        <button class="tab-btn active" type="button" data-tab="phrases">G1–G5 溝通短語詞庫</button>
+        <button class="tab-btn" type="button" data-tab="tuning">手勢門檻與語音參數</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tab 1: Phrase Editor -->
+        <div id="tabPhrases" class="tab-panel active">
+          <p id="phraseTabDesc" class="tab-desc">自訂每個群組（G1–G5）的名稱與 4 個方向（M1 左 / M2 上 / M3 右 / M4 下）對應的語音短語，儲存後會自動保留設定。</p>
+          <div id="phraseEditorContainer" class="phrase-editor-grid"></div>
+        </div>
+
+        <!-- Tab 2: Gesture Tuning -->
+        <div id="tabTuning" class="tab-panel">
+          <div class="tuning-grid">
+            <div class="form-field">
+              <label for="cfgDirectionMode">M1–M4 方向觸發模式</label>
+              <select id="cfgDirectionMode">
+                <option value="hybrid">混合模式（區域停留 + 整手平移）</option>
+                <option value="dwell">僅區域停留（最穩定防誤觸）</option>
+                <option value="swipe">僅整手平移（快速切換）</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="cfgM5Mode">M5 確認送出模式</label>
+              <select id="cfgM5Mode">
+                <option value="both">雙模式（握拳→張掌，或半張掌駐留）</option>
+                <option value="transition">僅握拳→張掌轉換</option>
+                <option value="dwell">僅原地半張掌駐留</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="cfgDwellMs">方向區域停留時間：<strong id="valDwellMs">800 ms</strong></label>
+              <input id="cfgDwellMs" type="range" min="300" max="2000" step="50" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgM5DwellMs">M5 半張掌駐留時間：<strong id="valM5DwellMs">1100 ms</strong></label>
+              <input id="cfgM5DwellMs" type="range" min="500" max="2500" step="50" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgCooldownMs">觸發後冷卻時間：<strong id="valCooldownMs">950 ms</strong></label>
+              <input id="cfgCooldownMs" type="range" min="400" max="2000" step="50" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgDeadzone">中心中性死區半徑：<strong id="valDeadzone">0.14</strong></label>
+              <input id="cfgDeadzone" type="range" min="0.06" max="0.28" step="0.01" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgFistThreshold">握拳判定門檻：<strong id="valFistThreshold">1.05</strong></label>
+              <input id="cfgFistThreshold" type="range" min="0.65" max="1.35" step="0.02" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgHalfOpenThreshold">半張掌駐留門檻：<strong id="valHalfOpenThreshold">1.25</strong></label>
+              <input id="cfgHalfOpenThreshold" type="range" min="0.90" max="1.60" step="0.02" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgOpenThreshold">張掌完成門檻：<strong id="valOpenThreshold">1.42</strong></label>
+              <input id="cfgOpenThreshold" type="range" min="1.05" max="1.85" step="0.02" />
+            </div>
+
+            <div class="form-field">
+              <label for="cfgSpeechRate">語音朗讀速度：<strong id="valSpeechRate">1.0x</strong></label>
+              <input id="cfgSpeechRate" type="range" min="0.6" max="1.5" step="0.1" />
+            </div>
+
+            <div class="form-checks">
+              <label class="check-item"><input id="cfgMirrorCamera" type="checkbox" /> 攝影機水平鏡像翻轉（自拍視角）</label>
+              <label class="check-item"><input id="cfgSpeechEnabled" type="checkbox" /> M5 確認送出時自動語音朗讀</label>
+              <label class="check-item"><input id="cfgSoundEffects" type="checkbox" /> 啟用提示音效</label>
+              <label class="check-item"><input id="cfgAutoReturn" type="checkbox" /> 短語送出後自動返回群組主選單</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnResetDefaults" class="btn btn-danger-ghost" type="button">恢復原廠預設</button>
+        <div class="modal-footer-right">
+          <button id="btnCancelSettings" class="btn btn-ghost" type="button">取消</button>
+          <button id="btnSaveSettings" class="btn btn-primary" type="button">儲存設定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./static/js/app.js"></script>
+</body>
+</html>
